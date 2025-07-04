@@ -496,6 +496,7 @@
 
             async updateTickerData() {
                 try {
+                    console.log('🚀 UPDATE TICKER DATA START');
                     this.isMarketHours = this.isMarketOpen();
                     
                     // EXACTLY match the working version logic
@@ -505,19 +506,19 @@
                         // Market hours: Show 20 stocks + 4 crypto + ALL ETFs + commodities + futures
                         selectedSymbols = [
                             ...this.stocks.slice(0, 20), // 20 of 35 stocks
-                            ...this.cryptos.slice(0, 4), // 4 cryptos during market hours  
-                            ...this.etfs, // ALL 8 ETFs
-                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // ALL 6 commodities
-                            'ES=F', 'NQ=F', 'YM=F' // ALL 3 index futures
+                            'BTC-USD', 'ETH-USD', 'BNB-USD', 'XRP-USD', // FORCE 4 crypto during market hours
+                            'SPY', 'QQQ', 'DIA', 'GLD', 'IWM', 'EFA', 'VTI', 'VOO', // FORCE ALL 8 ETFs
+                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // FORCE ALL 6 commodities
+                            'ES=F', 'NQ=F', 'YM=F' // FORCE ALL 3 index futures
                         ];
                     } else {
                         // After hours: Show 12 stocks + ALL 10 crypto + ALL ETFs + commodities + futures
                         selectedSymbols = [
                             ...this.stocks.slice(0, 12), // 12 key stocks
-                            ...this.cryptos, // ALL 10 cryptos after hours
-                            ...this.etfs, // ALL 8 ETFs
-                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // ALL 6 commodities
-                            'ES=F', 'NQ=F', 'YM=F' // ALL 3 index futures
+                            'BTC-USD', 'ETH-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'SOL-USD', 'DOT-USD', 'AVAX-USD', 'MATIC-USD', 'LINK-USD', // FORCE ALL 10 crypto
+                            'SPY', 'QQQ', 'DIA', 'GLD', 'IWM', 'EFA', 'VTI', 'VOO', // FORCE ALL 8 ETFs
+                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // FORCE ALL 6 commodities
+                            'ES=F', 'NQ=F', 'YM=F' // FORCE ALL 3 index futures
                         ];
                     }
                     
@@ -531,20 +532,34 @@
                     console.log('Index futures in selection:', selectedSymbols.filter(s => this.indexFutures.includes(s)).length);
                     console.log('=========================');
                     
+                    console.log('🔄 Starting data fetch for', selectedSymbols.length, 'symbols...');
+                    
                     const dataPromises = selectedSymbols.map(symbol => this.fetchStockData(symbol));
                     const results = await Promise.all(dataPromises);
+                    
+                    console.log('📊 Fetch complete. Processing results...');
+                    console.log('Raw results length:', results.length);
+                    console.log('Results sample:', results.slice(0, 3));
+                    
                     const validData = results.filter(item => item !== null);
                     
-                    console.log('Valid data count:', validData.length);
+                    console.log('✅ Valid data count:', validData.length);
+                    console.log('Valid data sample:', validData.slice(0, 3));
                     console.log('Commodities in valid data:', validData.filter(item => item.isCommodity));
                     console.log('Index futures in valid data:', validData.filter(item => item.isIndexFuture));
+                    console.log('ETFs in valid data:', validData.filter(item => item.isETF));
                     
                     if (validData.length > 0) {
+                        console.log('🎯 Calling renderTicker with', validData.length, 'items...');
                         this.renderTicker(validData);
                         this.updateMarketStatus();
+                        console.log('✅ Render complete!');
+                    } else {
+                        console.error('❌ NO VALID DATA - Cannot render ticker');
                     }
                 } catch (error) {
-                    console.error('Error updating ticker data:', error);
+                    console.error('💥 ERROR in updateTickerData:', error);
+                    console.error('Error stack:', error.stack);
                 }
             }
 
