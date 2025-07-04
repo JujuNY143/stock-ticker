@@ -28,23 +28,14 @@
             display: flex;
             align-items: center;
             height: 100%;
-            animation: scroll-left 90s linear infinite;
+            animation: scroll-left 120s linear infinite;
             white-space: nowrap;
             will-change: transform;
         }
 
-        .ticker-content:after {
-            content: "";
-            display: flex;
-            align-items: center;
-            height: 100%;
-            animation: scroll-left 90s linear infinite;
-            white-space: nowrap;
-        }
-
         @keyframes scroll-left {
             0% { transform: translate3d(0%, 0, 0); }
-            100% { transform: translate3d(-100%, 0, 0); }
+            100% { transform: translate3d(-50%, 0, 0); }
         }
 
         .stock-item {
