@@ -218,12 +218,18 @@
     <script>
         class EnhancedStockTicker {
             constructor() {
-                // Expanded stock list
+                // Expanded stock list - ALL stocks from previous versions
                 this.stocks = [
+                    // Major Tech (8)
                     'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX',
+                    // Growth Stocks (8) 
                     'AMD', 'INTC', 'CRM', 'ADBE', 'PYPL', 'SHOP', 'ZM', 'UBER',
+                    // Trending Stocks (8)
                     'COIN', 'RBLX', 'PLTR', 'SNOW', 'NET', 'CRWD', 'DDOG', 'OKTA',
-                    'BABA', 'JD', 'NIO', 'XPEV', 'PDD', 'BIDU', 'SPOT', 'SQ', 'ROKU'
+                    // Chinese Stocks (6)
+                    'BABA', 'JD', 'NIO', 'XPEV', 'PDD', 'BIDU',
+                    // Additional Growth (3)
+                    'SPOT', 'SQ', 'ROKU'
                 ];
                 
                 this.cryptos = ['BTC-USD', 'ETH-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'SOL-USD', 'DOT-USD', 'AVAX-USD', 'MATIC-USD', 'LINK-USD'];
@@ -469,21 +475,21 @@
                 try {
                     this.isMarketHours = this.isMarketOpen();
                     
-                    // FORCE include commodities and index futures for testing
+                    // Show MORE stocks to ensure variety
                     let selectedSymbols = [];
                     
                     if (this.isMarketHours) {
                         selectedSymbols = [
-                            ...this.stocks.slice(0, 12),
+                            ...this.stocks.slice(0, 20), // 20 stocks during market hours
                             ...this.cryptos.slice(0, 4),
                             ...this.etfs,
-                            ...this.commodities, // FORCE include all commodities
-                            ...this.indexFutures // FORCE include all index futures
+                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // FORCE commodities
+                            'ES=F', 'NQ=F', 'YM=F' // FORCE index futures
                         ];
                     } else {
-                        // After hours/holidays - FORCE everything to show
+                        // After hours/holidays - Show ALL stock variety
                         selectedSymbols = [
-                            ...this.stocks.slice(0, 10),
+                            ...this.stocks, // ALL 33 stocks after hours for max variety
                             ...this.cryptos,
                             ...this.etfs,
                             'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // FORCE commodities
@@ -492,6 +498,7 @@
                     }
                     
                     console.log('Selected symbols:', selectedSymbols);
+                    console.log('TOTAL STOCKS SELECTED:', this.stocks.length, 'stocks available');
                     console.log('Commodities in selection:', selectedSymbols.filter(s => s.includes('=F')));
                     
                     const dataPromises = selectedSymbols.map(symbol => this.fetchStockData(symbol));
