@@ -469,36 +469,38 @@
                 try {
                     this.isMarketHours = this.isMarketOpen();
                     
-                    // Always include ALL categories for maximum variety
+                    // FORCE include commodities and index futures for testing
                     let selectedSymbols = [];
                     
                     if (this.isMarketHours) {
-                        // Market hours: Show variety from all categories
                         selectedSymbols = [
-                            ...this.stocks.slice(0, 18), // 18 stocks
-                            ...this.cryptos.slice(0, 6), // Some crypto even during market hours
-                            ...this.etfs, // All ETFs
-                            ...this.commodities, // All commodities  
-                            ...this.indexFutures // All index futures
+                            ...this.stocks.slice(0, 12),
+                            ...this.cryptos.slice(0, 4),
+                            ...this.etfs,
+                            ...this.commodities, // FORCE include all commodities
+                            ...this.indexFutures // FORCE include all index futures
                         ];
                     } else {
-                        // After hours/holidays: Show everything for maximum engagement
+                        // After hours/holidays - FORCE everything to show
                         selectedSymbols = [
-                            ...this.stocks.slice(0, 15), // 15 key stocks
-                            ...this.cryptos, // ALL crypto after hours
-                            ...this.etfs, // All ETFs
-                            ...this.commodities, // All commodities
-                            ...this.indexFutures // All index futures
+                            ...this.stocks.slice(0, 10),
+                            ...this.cryptos,
+                            ...this.etfs,
+                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // FORCE commodities
+                            'ES=F', 'NQ=F', 'YM=F' // FORCE index futures
                         ];
                     }
                     
-                    console.log('Selected symbols:', selectedSymbols); // Debug log
+                    console.log('Selected symbols:', selectedSymbols);
+                    console.log('Commodities in selection:', selectedSymbols.filter(s => s.includes('=F')));
                     
                     const dataPromises = selectedSymbols.map(symbol => this.fetchStockData(symbol));
                     const results = await Promise.all(dataPromises);
                     const validData = results.filter(item => item !== null);
                     
-                    console.log('Valid data count:', validData.length); // Debug log
+                    console.log('Valid data count:', validData.length);
+                    console.log('Commodities in valid data:', validData.filter(item => item.isCommodity));
+                    console.log('Index futures in valid data:', validData.filter(item => item.isIndexFuture));
                     
                     if (validData.length > 0) {
                         this.renderTicker(validData);
