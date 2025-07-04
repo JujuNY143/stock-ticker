@@ -383,15 +383,19 @@
                             change: change.toFixed(2),
                             changePercent: changePercent.toFixed(2),
                             isCrypto: symbol.includes('-USD'),
-                            isCommodity: symbol.includes('=F'),
+                            isCommodity: symbol.includes('=F') && !this.indexFutures.includes(symbol),
                             isETF: this.etfs.includes(symbol),
                             isIndexFuture: this.indexFutures.includes(symbol)
                         };
                     }
                 } catch (error) {
                     console.error(`Error fetching ${symbol}:`, error);
+                    // Always return fake data as fallback
                     return this.getFakeStockData(symbol);
                 }
+                
+                // Return fake data if API fails
+                return this.getFakeStockData(symbol);
             }
 
             getFakeStockData(symbol) {
@@ -455,7 +459,7 @@
                     change: data.change.toFixed(2),
                     changePercent: changePercent.toFixed(2),
                     isCrypto: symbol.includes('-USD'),
-                    isCommodity: symbol.includes('=F'),
+                    isCommodity: symbol.includes('=F') && !this.indexFutures.includes(symbol),
                     isETF: this.etfs.includes(symbol),
                     isIndexFuture: this.indexFutures.includes(symbol)
                 };
@@ -465,32 +469,36 @@
                 try {
                     this.isMarketHours = this.isMarketOpen();
                     
-                    // Select what to show - much more variety
+                    // Always include ALL categories for maximum variety
                     let selectedSymbols = [];
                     
                     if (this.isMarketHours) {
-                        // Market hours: Show most stocks + ALL ETFs + commodities + index futures
+                        // Market hours: Show variety from all categories
                         selectedSymbols = [
-                            ...this.stocks.slice(0, 20), // 20 stocks instead of 12
+                            ...this.stocks.slice(0, 18), // 18 stocks
+                            ...this.cryptos.slice(0, 6), // Some crypto even during market hours
                             ...this.etfs, // All ETFs
-                            ...this.commodities, // All commodities
-                            ...this.indexFutures, // Index futures
-                            ...this.cryptos.slice(0, 4) // Some crypto even during market hours
+                            ...this.commodities, // All commodities  
+                            ...this.indexFutures // All index futures
                         ];
                     } else {
-                        // After hours: Reduced stocks + ALL crypto + ETFs + commodities + index futures
+                        // After hours/holidays: Show everything for maximum engagement
                         selectedSymbols = [
-                            ...this.stocks.slice(0, 12), // 12 key stocks
+                            ...this.stocks.slice(0, 15), // 15 key stocks
                             ...this.cryptos, // ALL crypto after hours
                             ...this.etfs, // All ETFs
                             ...this.commodities, // All commodities
-                            ...this.indexFutures // Index futures
+                            ...this.indexFutures // All index futures
                         ];
                     }
+                    
+                    console.log('Selected symbols:', selectedSymbols); // Debug log
                     
                     const dataPromises = selectedSymbols.map(symbol => this.fetchStockData(symbol));
                     const results = await Promise.all(dataPromises);
                     const validData = results.filter(item => item !== null);
+                    
+                    console.log('Valid data count:', validData.length); // Debug log
                     
                     if (validData.length > 0) {
                         this.renderTicker(validData);
