@@ -407,51 +407,53 @@
             }
 
             getFakeStockData(symbol) {
+                console.log('GENERATING FAKE DATA FOR:', symbol);
+                
                 const fakeData = {
-                    // Major Tech
+                    // Major Tech (8)
                     'AAPL': { price: 185.25, change: 2.15 }, 'GOOGL': { price: 2801.50, change: -12.30 },
                     'MSFT': { price: 378.90, change: 5.67 }, 'AMZN': { price: 145.80, change: -3.25 },
                     'TSLA': { price: 248.75, change: 12.40 }, 'NVDA': { price: 875.30, change: 25.60 },
                     'META': { price: 485.20, change: -8.15 }, 'NFLX': { price: 525.40, change: 4.80 },
                     
-                    // Growth Stocks
+                    // Growth Stocks (8)
                     'AMD': { price: 142.30, change: 3.45 }, 'INTC': { price: 43.20, change: -0.85 },
                     'CRM': { price: 245.60, change: 7.20 }, 'ADBE': { price: 567.80, change: -4.30 },
                     'PYPL': { price: 62.45, change: 1.85 }, 'SHOP': { price: 67.90, change: 2.10 },
                     'ZM': { price: 69.80, change: -1.25 }, 'UBER': { price: 58.40, change: 0.95 },
                     
-                    // Trending Stocks
+                    // Trending Stocks (8)
                     'COIN': { price: 165.30, change: 8.75 }, 'RBLX': { price: 38.20, change: -2.10 },
                     'PLTR': { price: 18.65, change: 0.45 }, 'SNOW': { price: 198.40, change: 5.20 },
                     'NET': { price: 76.80, change: 2.35 }, 'CRWD': { price: 245.70, change: 6.80 },
                     'DDOG': { price: 98.50, change: 1.90 }, 'OKTA': { price: 89.20, change: -1.40 },
                     
-                    // Chinese Stocks
+                    // Chinese Stocks (6)
                     'BABA': { price: 78.40, change: 1.85 }, 'JD': { price: 32.60, change: 0.75 },
                     'NIO': { price: 8.95, change: -0.25 }, 'XPEV': { price: 12.30, change: 0.40 },
                     'PDD': { price: 89.70, change: 2.15 }, 'BIDU': { price: 98.50, change: -1.20 },
                     
-                    // ETFs
+                    // Bonus Stocks (5)
+                    'SPOT': { price: 195.40, change: 4.20 }, 'SQ': { price: 62.80, change: 1.85 },
+                    'ROKU': { price: 58.90, change: -1.40 }, 'TWTR': { price: 42.30, change: 0.85 },
+                    'SNAP': { price: 12.45, change: -0.25 },
+                    
+                    // ALL 8 ETFs
                     'SPY': { price: 485.30, change: 3.25 }, 'QQQ': { price: 398.70, change: 5.80 },
                     'DIA': { price: 365.40, change: 2.10 }, 'GLD': { price: 185.90, change: 0.85 },
                     'IWM': { price: 198.60, change: 1.45 }, 'EFA': { price: 72.30, change: 0.65 },
                     'VTI': { price: 248.50, change: 2.75 }, 'VOO': { price: 445.80, change: 3.15 },
                     
-                    // Commodities/Futures
+                    // ALL 6 Commodities/Futures
                     'GC=F': { price: 2015.40, change: 12.80 }, 'CL=F': { price: 78.65, change: -1.25 },
                     'SI=F': { price: 24.85, change: 0.45 }, 'NG=F': { price: 2.85, change: 0.08 },
                     'ZC=F': { price: 485.25, change: -2.75 }, 'ZS=F': { price: 1245.50, change: 8.25 },
                     
-                    // Index Futures
+                    // ALL 3 Index Futures
                     'ES=F': { price: 4850.75, change: 15.25 }, 'NQ=F': { price: 16420.50, change: 45.80 },
                     'YM=F': { price: 36540.00, change: 125.00 },
                     
-                    // More Stocks (added to reach 35)
-                    'SPOT': { price: 195.40, change: 4.20 }, 'SQ': { price: 62.80, change: 1.85 },
-                    'ROKU': { price: 58.90, change: -1.40 }, 'TWTR': { price: 42.30, change: 0.85 },
-                    'SNAP': { price: 12.45, change: -0.25 },
-                    
-                    // Crypto
+                    // ALL 10 CRYPTO - COMPLETE LIST
                     'BTC-USD': { price: 65420.00, change: 1250.00 }, 'ETH-USD': { price: 3180.50, change: 85.30 },
                     'BNB-USD': { price: 385.20, change: 12.40 }, 'XRP-USD': { price: 0.58, change: 0.02 },
                     'ADA-USD': { price: 0.45, change: -0.01 }, 'SOL-USD': { price: 98.30, change: 4.20 },
@@ -459,10 +461,15 @@
                     'MATIC-USD': { price: 0.95, change: 0.03 }, 'LINK-USD': { price: 15.40, change: 0.55 }
                 };
                 
-                const data = fakeData[symbol] || { price: 100.00, change: Math.random() * 10 - 5 };
+                // Get specific data or generate random data for missing symbols
+                const data = fakeData[symbol] || { 
+                    price: Math.random() * 200 + 50, 
+                    change: (Math.random() - 0.5) * 20 
+                };
+                
                 const changePercent = (data.change / data.price) * 100;
                 
-                return {
+                const result = {
                     symbol: symbol,
                     price: data.price.toFixed(2),
                     change: data.change.toFixed(2),
@@ -472,6 +479,9 @@
                     isETF: this.etfs.includes(symbol),
                     isIndexFuture: this.indexFutures.includes(symbol)
                 };
+                
+                console.log('FAKE DATA RESULT FOR', symbol, ':', result);
+                return result;
             }
 
             async updateTickerData() {
