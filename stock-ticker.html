@@ -30,6 +30,7 @@
             height: 100%;
             animation: scroll-left 90s linear infinite;
             white-space: nowrap;
+            will-change: transform;
         }
 
         .ticker-content:after {
@@ -42,8 +43,8 @@
         }
 
         @keyframes scroll-left {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-100%); }
+            0% { transform: translate3d(0%, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
         }
 
         .stock-item {
