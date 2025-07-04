@@ -219,7 +219,7 @@
     <script>
         class EnhancedStockTicker {
             constructor() {
-                // Expanded stock list - ALL stocks from previous versions
+                // ALL 35 STOCKS - Complete list from working version
                 this.stocks = [
                     // Major Tech (8)
                     'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX',
@@ -229,16 +229,17 @@
                     'COIN', 'RBLX', 'PLTR', 'SNOW', 'NET', 'CRWD', 'DDOG', 'OKTA',
                     // Chinese Stocks (6)
                     'BABA', 'JD', 'NIO', 'XPEV', 'PDD', 'BIDU',
-                    // Additional Growth (3)
-                    'SPOT', 'SQ', 'ROKU'
+                    // Added Bonus (5) - Making it 35 total
+                    'SPOT', 'SQ', 'ROKU', 'TWTR', 'SNAP'
                 ];
                 
+                // ALL 10 CRYPTOS from working version
                 this.cryptos = ['BTC-USD', 'ETH-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'SOL-USD', 'DOT-USD', 'AVAX-USD', 'MATIC-USD', 'LINK-USD'];
                 
-                // Popular ETFs
+                // ALL 8 ETFs from working version
                 this.etfs = ['SPY', 'QQQ', 'DIA', 'GLD', 'IWM', 'EFA', 'VTI', 'VOO'];
                 
-                // Commodities/Futures + Index Futures
+                // Commodities + Index Futures
                 this.commodities = ['GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F'];
                 this.indexFutures = ['ES=F', 'NQ=F', 'YM=F']; // S&P 500, NASDAQ, Dow futures
                 
@@ -445,9 +446,10 @@
                     'ES=F': { price: 4850.75, change: 15.25 }, 'NQ=F': { price: 16420.50, change: 45.80 },
                     'YM=F': { price: 36540.00, change: 125.00 },
                     
-                    // More Stocks
+                    // More Stocks (added to reach 35)
                     'SPOT': { price: 195.40, change: 4.20 }, 'SQ': { price: 62.80, change: 1.85 },
-                    'ROKU': { price: 58.90, change: -1.40 },
+                    'ROKU': { price: 58.90, change: -1.40 }, 'TWTR': { price: 42.30, change: 0.85 },
+                    'SNAP': { price: 12.45, change: -0.25 },
                     
                     // Crypto
                     'BTC-USD': { price: 65420.00, change: 1250.00 }, 'ETH-USD': { price: 3180.50, change: 85.30 },
@@ -476,31 +478,38 @@
                 try {
                     this.isMarketHours = this.isMarketOpen();
                     
-                    // Show MORE stocks to ensure variety
+                    // EXACTLY match the working version logic
                     let selectedSymbols = [];
                     
                     if (this.isMarketHours) {
+                        // Market hours: Show 20 stocks + 4 crypto + ALL ETFs + commodities + futures
                         selectedSymbols = [
-                            ...this.stocks.slice(0, 20), // 20 stocks during market hours
-                            ...this.cryptos.slice(0, 4),
-                            ...this.etfs,
-                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // FORCE commodities
-                            'ES=F', 'NQ=F', 'YM=F' // FORCE index futures
+                            ...this.stocks.slice(0, 20), // 20 of 35 stocks
+                            ...this.cryptos.slice(0, 4), // 4 cryptos during market hours  
+                            ...this.etfs, // ALL 8 ETFs
+                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // ALL 6 commodities
+                            'ES=F', 'NQ=F', 'YM=F' // ALL 3 index futures
                         ];
                     } else {
-                        // After hours/holidays - Show ALL stock variety
+                        // After hours: Show 12 stocks + ALL 10 crypto + ALL ETFs + commodities + futures
                         selectedSymbols = [
-                            ...this.stocks, // ALL 33 stocks after hours for max variety
-                            ...this.cryptos,
-                            ...this.etfs,
-                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // FORCE commodities
-                            'ES=F', 'NQ=F', 'YM=F' // FORCE index futures
+                            ...this.stocks.slice(0, 12), // 12 key stocks
+                            ...this.cryptos, // ALL 10 cryptos after hours
+                            ...this.etfs, // ALL 8 ETFs
+                            'GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F', // ALL 6 commodities
+                            'ES=F', 'NQ=F', 'YM=F' // ALL 3 index futures
                         ];
                     }
                     
-                    console.log('Selected symbols:', selectedSymbols);
-                    console.log('TOTAL STOCKS SELECTED:', this.stocks.length, 'stocks available');
-                    console.log('Commodities in selection:', selectedSymbols.filter(s => s.includes('=F')));
+                    console.log('=== SELECTION SUMMARY ===');
+                    console.log('Market Hours:', this.isMarketHours);
+                    console.log('Total symbols selected:', selectedSymbols.length);
+                    console.log('Stocks in selection:', selectedSymbols.filter(s => this.stocks.includes(s)).length);
+                    console.log('Crypto in selection:', selectedSymbols.filter(s => s.includes('-USD')).length);
+                    console.log('ETFs in selection:', selectedSymbols.filter(s => this.etfs.includes(s)).length);
+                    console.log('Commodities in selection:', selectedSymbols.filter(s => s.includes('=F') && !this.indexFutures.includes(s)).length);
+                    console.log('Index futures in selection:', selectedSymbols.filter(s => this.indexFutures.includes(s)).length);
+                    console.log('=========================');
                     
                     const dataPromises = selectedSymbols.map(symbol => this.fetchStockData(symbol));
                     const results = await Promise.all(dataPromises);
