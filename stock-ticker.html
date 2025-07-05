@@ -33,8 +33,8 @@
         }
 
         @keyframes scroll-left {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-50%); }
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
         }
 
         .stock-item {
@@ -305,9 +305,9 @@
                 console.log('ETF count:', etfs.length);
                 console.log('Commodity count:', commodities.length);
                 
-                // Create seamless loop
+                // Create seamless loop - triple the content for smooth transition
                 const content = items.join('');
-                this.tickerContent.innerHTML = content + content;
+                this.tickerContent.innerHTML = content + content + content;
             }
 
             updateMarketStatus() {
