@@ -400,15 +400,48 @@
             getFakeStockData(symbol) {
                 console.log('🔄 GENERATING FAKE DATA FOR:', symbol);
                 
-                // First, determine what type this symbol is
+                // FORCE crypto classification
                 const isCrypto = symbol.includes('-USD');
-                const isETF = this.etfs.includes(symbol);
-                const isIndexFuture = this.indexFutures.includes(symbol);
+                const isETF = ['SPY', 'QQQ', 'DIA', 'GLD', 'IWM', 'EFA', 'VTI', 'VOO'].includes(symbol);
+                const isIndexFuture = ['ES=F', 'NQ=F', 'YM=F'].includes(symbol);
                 const isCommodity = symbol.includes('=F') && !isIndexFuture;
                 
                 console.log(`📊 SYMBOL ${symbol} CLASSIFICATION:`, {
                     isCrypto, isETF, isIndexFuture, isCommodity
                 });
+                
+                // GUARANTEE crypto data exists
+                if (isCrypto) {
+                    const cryptoData = {
+                        'BTC-USD': { price: 65420.00, change: 1250.00 },
+                        'ETH-USD': { price: 3180.50, change: 85.30 },
+                        'BNB-USD': { price: 385.20, change: 12.40 },
+                        'XRP-USD': { price: 0.58, change: 0.02 },
+                        'ADA-USD': { price: 0.45, change: -0.01 },
+                        'SOL-USD': { price: 98.30, change: 4.20 },
+                        'DOT-USD': { price: 7.85, change: 0.25 },
+                        'AVAX-USD': { price: 35.60, change: 1.80 },
+                        'MATIC-USD': { price: 0.95, change: 0.03 },
+                        'LINK-USD': { price: 15.40, change: 0.55 }
+                    };
+                    
+                    const data = cryptoData[symbol] || { price: 50000, change: 1000 };
+                    const changePercent = (data.change / data.price) * 100;
+                    
+                    const result = {
+                        symbol: symbol,
+                        price: data.price.toFixed(2),
+                        change: data.change.toFixed(2),
+                        changePercent: changePercent.toFixed(2),
+                        isCrypto: true,
+                        isCommodity: false,
+                        isETF: false,
+                        isIndexFuture: false
+                    };
+                    
+                    console.log('🟠 CRYPTO DATA CREATED:', symbol, result.price);
+                    return result;
+                }
                 
                 const fakeData = {
                     // Major Tech (8)
@@ -439,27 +472,20 @@
                     'ROKU': { price: 58.90, change: -1.40 }, 'TWTR': { price: 42.30, change: 0.85 },
                     'SNAP': { price: 12.45, change: -0.25 },
                     
-                    // 🟢 ALL 8 ETFs - CRITICAL
+                    // ALL 8 ETFs
                     'SPY': { price: 485.30, change: 3.25 }, 'QQQ': { price: 398.70, change: 5.80 },
                     'DIA': { price: 365.40, change: 2.10 }, 'GLD': { price: 185.90, change: 0.85 },
                     'IWM': { price: 198.60, change: 1.45 }, 'EFA': { price: 72.30, change: 0.65 },
                     'VTI': { price: 248.50, change: 2.75 }, 'VOO': { price: 445.80, change: 3.15 },
                     
-                    // 🟡 ALL 6 Commodities/Futures
+                    // ALL 6 Commodities/Futures
                     'GC=F': { price: 2015.40, change: 12.80 }, 'CL=F': { price: 78.65, change: -1.25 },
                     'SI=F': { price: 24.85, change: 0.45 }, 'NG=F': { price: 2.85, change: 0.08 },
                     'ZC=F': { price: 485.25, change: -2.75 }, 'ZS=F': { price: 1245.50, change: 8.25 },
                     
-                    // 🟣 ALL 3 Index Futures - CRITICAL
+                    // ALL 3 Index Futures
                     'ES=F': { price: 4850.75, change: 15.25 }, 'NQ=F': { price: 16420.50, change: 45.80 },
-                    'YM=F': { price: 36540.00, change: 125.00 },
-                    
-                    // 🟠 ALL 10 CRYPTO
-                    'BTC-USD': { price: 65420.00, change: 1250.00 }, 'ETH-USD': { price: 3180.50, change: 85.30 },
-                    'BNB-USD': { price: 385.20, change: 12.40 }, 'XRP-USD': { price: 0.58, change: 0.02 },
-                    'ADA-USD': { price: 0.45, change: -0.01 }, 'SOL-USD': { price: 98.30, change: 4.20 },
-                    'DOT-USD': { price: 7.85, change: 0.25 }, 'AVAX-USD': { price: 35.60, change: 1.80 },
-                    'MATIC-USD': { price: 0.95, change: 0.03 }, 'LINK-USD': { price: 15.40, change: 0.55 }
+                    'YM=F': { price: 36540.00, change: 125.00 }
                 };
                 
                 // Get specific data or generate random data for missing symbols
@@ -483,12 +509,15 @@
                 
                 console.log('✅ FINAL FAKE DATA FOR', symbol, ':', result);
                 
-                // Special alerts for ETFs and Index Futures
+                // Special alerts for each category
                 if (isETF) {
                     console.log('🟢 ETF CREATED:', symbol, result.price);
                 }
                 if (isIndexFuture) {
                     console.log('🟣 INDEX FUTURE CREATED:', symbol, result.price);
+                }
+                if (isCommodity) {
+                    console.log('🟡 COMMODITY CREATED:', symbol, result.price);
                 }
                 
                 return result;
