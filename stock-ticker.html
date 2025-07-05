@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Ticker - Simple Working Version</title>
+    <title>Enhanced Stock Ticker with News</title>
     <style>
         body {
             margin: 0;
@@ -28,12 +28,21 @@
             display: flex;
             align-items: center;
             height: 100%;
-            animation: scroll-left 45s linear infinite;
+            animation: scroll-left 90s linear infinite;
+            white-space: nowrap;
+        }
+
+        .ticker-content:after {
+            content: "";
+            display: flex;
+            align-items: center;
+            height: 100%;
+            animation: scroll-left 90s linear infinite;
             white-space: nowrap;
         }
 
         @keyframes scroll-left {
-            0% { transform: translateX(100%); }
+            0% { transform: translateX(0%); }
             100% { transform: translateX(-100%); }
         }
 
@@ -59,6 +68,32 @@
             backdrop-filter: blur(5px);
             min-width: 350px;
             border-left: 4px solid #ff4500;
+            flex-shrink: 0;
+        }
+
+        .commodity-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 25px;
+            padding: 8px 12px;
+            background: linear-gradient(45deg, rgba(255,215,0,0.3), rgba(218,165,32,0.2));
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            min-width: 160px;
+            border-left: 4px solid #ffd700;
+            flex-shrink: 0;
+        }
+
+        .etf-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 25px;
+            padding: 8px 12px;
+            background: linear-gradient(45deg, rgba(34,139,34,0.3), rgba(50,205,50,0.2));
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            min-width: 160px;
+            border-left: 4px solid #32cd32;
             flex-shrink: 0;
         }
 
@@ -115,10 +150,28 @@
             font-size: 11px;
             z-index: 100;
             white-space: nowrap;
+            min-width: fit-content;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .loading {
+            color: #ffffff;
+            text-align: center;
+            padding: 30px;
+            font-size: 16px;
         }
 
         .crypto-badge {
             background: linear-gradient(45deg, #f7931a, #ffb347);
+            color: #000;
+            font-size: 9px;
+            padding: 1px 3px;
+            border-radius: 3px;
+            margin-left: 3px;
+        }
+
+        .commodity-badge {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
             color: #000;
             font-size: 9px;
             padding: 1px 3px;
@@ -135,9 +188,9 @@
             margin-left: 3px;
         }
 
-        .future-badge {
-            background: linear-gradient(45deg, #ffd700, #ffed4e);
-            color: #000;
+        .trending-badge {
+            background: linear-gradient(45deg, #ff006e, #8338ec);
+            color: #fff;
             font-size: 9px;
             padding: 1px 3px;
             border-radius: 3px;
@@ -148,166 +201,348 @@
 <body>
     <div class="ticker-container">
         <div class="ticker-content" id="tickerContent">
-            Loading stock data...
+            <div class="loading">📈 Loading stock data and market news...</div>
         </div>
         <div class="market-status" id="marketStatus">•••</div>
     </div>
 
     <script>
-        class SimpleTicker {
+        class EnhancedStockTicker {
             constructor() {
+                // Expanded stock list
+                this.stocks = [
+                    'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX',
+                    'AMD', 'INTC', 'CRM', 'ADBE', 'PYPL', 'SHOP', 'ZM', 'UBER',
+                    'COIN', 'RBLX', 'PLTR', 'SNOW', 'NET', 'CRWD', 'DDOG', 'OKTA',
+                    'BABA', 'JD', 'NIO', 'XPEV', 'PDD', 'BIDU'
+                ];
+                
+                this.cryptos = ['BTC-USD', 'ETH-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'SOL-USD', 'DOT-USD', 'AVAX-USD', 'MATIC-USD', 'LINK-USD'];
+                
+                // Popular ETFs
+                this.etfs = ['SPY', 'QQQ', 'DIA', 'GLD', 'IWM', 'EFA', 'VTI', 'VOO'];
+                
+                // Commodities/Futures
+                this.commodities = ['GC=F', 'CL=F', 'SI=F', 'NG=F', 'ZC=F', 'ZS=F'];
+                
+                // Market news headlines
+                this.newsHeadlines = [
+                    "📊 S&P 500 reaches new all-time high as tech stocks surge",
+                    "🚀 Tesla announces breakthrough in battery technology",
+                    "💰 Federal Reserve maintains interest rates, markets rally",
+                    "🏦 Major banks report strong Q4 earnings beats",
+                    "📱 Apple unveils new AI features for iPhone",
+                    "⚡ NVIDIA stock soars on AI chip demand",
+                    "🌐 Microsoft expands cloud services globally",
+                    "💎 Bitcoin hits new monthly high amid institutional buying",
+                    "📈 Tech IPO market shows signs of recovery",
+                    "🔋 Clean energy stocks gain momentum on climate initiatives",
+                    "🎮 Gaming sector sees record revenue growth",
+                    "🛒 E-commerce giants report holiday sales surge",
+                    "🏭 Manufacturing index shows economic strength",
+                    "💊 Biotech breakthrough drives healthcare rally",
+                    "🌍 Global markets react to positive economic data",
+                    "🛢️ Oil prices stabilize as OPEC maintains production cuts",
+                    "🥇 Gold futures climb on inflation hedge demand",
+                    "⚡ Silver reaches 6-month high on industrial demand",
+                    "📊 ETF inflows hit record levels this quarter",
+                    "🏢 Real estate sector shows signs of recovery"
+                ];
+                
+                this.updateInterval = 45000; // 45 seconds
+                this.isMarketHours = false;
                 this.tickerContent = document.getElementById('tickerContent');
                 this.marketStatus = document.getElementById('marketStatus');
-                this.newsIndex = 0;
-                
-                this.news = [
-                    "📊 S&P 500 reaches new highs as tech stocks surge",
-                    "🚀 Tesla announces breakthrough in battery technology", 
-                    "💰 Federal Reserve maintains interest rates",
-                    "📱 Apple unveils new AI features",
-                    "⚡ NVIDIA stock soars on AI demand",
-                    "💎 Bitcoin hits new monthly high",
-                    "🌐 Microsoft expands cloud services",
-                    "🔋 Clean energy stocks gain momentum"
-                ];
+                this.currentNewsIndex = 0;
                 
                 this.init();
             }
 
-            init() {
-                this.createTicker();
-                this.updateMarketStatus();
-                setInterval(() => this.updateMarketStatus(), 60000);
+            async init() {
+                await this.updateTickerData();
+                setInterval(() => this.updateTickerData(), this.updateInterval);
             }
 
-            createTicker() {
-                console.log('Creating simple ticker...');
+            isMarketOpen() {
+                const now = new Date();
+                const day = now.getDay();
+                const hours = now.getHours();
+                const minutes = now.getMinutes();
+                const currentTime = hours * 60 + minutes;
                 
-                const items = [];
+                // Check for market holidays first
+                if (this.isMarketHoliday(now)) {
+                    return false;
+                }
                 
-                // STOCKS
-                const stocks = [
-                    {symbol: 'AAPL', price: '185.25', change: '+2.15', percent: '+1.18%'},
-                    {symbol: 'GOOGL', price: '2801.50', change: '-12.30', percent: '-0.44%'},
-                    {symbol: 'MSFT', price: '378.90', change: '+5.67', percent: '+1.52%'},
-                    {symbol: 'AMZN', price: '145.80', change: '-3.25', percent: '-2.18%'},
-                    {symbol: 'TSLA', price: '248.75', change: '+12.40', percent: '+5.24%'},
-                    {symbol: 'NVDA', price: '875.30', change: '+25.60', percent: '+3.01%'},
-                    {symbol: 'META', price: '485.20', change: '-8.15', percent: '-1.65%'},
-                    {symbol: 'NFLX', price: '525.40', change: '+4.80', percent: '+0.92%'}
+                const marketOpen = 9 * 60 + 30; // 9:30 AM
+                const marketClose = 16 * 60; // 4:00 PM
+                
+                return day >= 1 && day <= 5 && currentTime >= marketOpen && currentTime < marketClose;
+            }
+
+            isMarketHoliday(date) {
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1; // JavaScript months are 0-indexed
+                const day = date.getDate();
+                
+                // Major US market holidays
+                const holidays = [
+                    // New Year's Day
+                    { month: 1, day: 1 },
+                    // Martin Luther King Jr. Day (3rd Monday in January)
+                    this.getNthWeekday(year, 1, 1, 3),
+                    // Presidents Day (3rd Monday in February)
+                    this.getNthWeekday(year, 2, 1, 3),
+                    // Good Friday (calculated)
+                    this.getGoodFriday(year),
+                    // Memorial Day (last Monday in May)
+                    this.getLastWeekday(year, 5, 1),
+                    // Juneteenth
+                    { month: 6, day: 19 },
+                    // Independence Day
+                    { month: 7, day: 4 },
+                    // Labor Day (1st Monday in September)
+                    this.getNthWeekday(year, 9, 1, 1),
+                    // Thanksgiving (4th Thursday in November)
+                    this.getNthWeekday(year, 11, 4, 4),
+                    // Christmas Day
+                    { month: 12, day: 25 }
                 ];
                 
-                stocks.forEach(stock => {
-                    const changeClass = stock.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${stock.symbol}</span>
-                            <span class="stock-price">$${stock.price}</span>
-                            <span class="stock-change ${changeClass}">${stock.change} (${stock.percent})</span>
+                // Check if current date matches any holiday
+                return holidays.some(holiday => 
+                    holiday && holiday.month === month && holiday.day === day
+                );
+            }
+
+            getNthWeekday(year, month, weekday, n) {
+                const firstDay = new Date(year, month - 1, 1);
+                const firstWeekday = firstDay.getDay();
+                const daysToAdd = (weekday - firstWeekday + 7) % 7;
+                const nthDate = new Date(year, month - 1, 1 + daysToAdd + (n - 1) * 7);
+                return { month: nthDate.getMonth() + 1, day: nthDate.getDate() };
+            }
+
+            getLastWeekday(year, month, weekday) {
+                const lastDay = new Date(year, month, 0); // Last day of the month
+                const lastWeekday = lastDay.getDay();
+                const daysToSubtract = (lastWeekday - weekday + 7) % 7;
+                const lastWeekdayDate = new Date(year, month - 1, lastDay.getDate() - daysToSubtract);
+                return { month: lastWeekdayDate.getMonth() + 1, day: lastWeekdayDate.getDate() };
+            }
+
+            getGoodFriday(year) {
+                // Easter calculation (Western)
+                const a = year % 19;
+                const b = Math.floor(year / 100);
+                const c = year % 100;
+                const d = Math.floor(b / 4);
+                const e = b % 4;
+                const f = Math.floor((b + 8) / 25);
+                const g = Math.floor((b - f + 1) / 3);
+                const h = (19 * a + b - d - g + 15) % 30;
+                const i = Math.floor(c / 4);
+                const k = c % 4;
+                const l = (32 + 2 * e + 2 * i - h - k) % 7;
+                const m = Math.floor((a + 11 * h + 22 * l) / 451);
+                const month = Math.floor((h + l - 7 * m + 114) / 31);
+                const day = ((h + l - 7 * m + 114) % 31) + 1;
+                
+                // Good Friday is 2 days before Easter
+                const easter = new Date(year, month - 1, day);
+                const goodFriday = new Date(easter.getTime() - 2 * 24 * 60 * 60 * 1000);
+                return { month: goodFriday.getMonth() + 1, day: goodFriday.getDate() };
+            }
+
+            async fetchStockData(symbol) {
+                try {
+                    const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`)}`);
+                    const data = await response.json();
+                    
+                    if (data.chart && data.chart.result && data.chart.result[0]) {
+                        const result = data.chart.result[0];
+                        const meta = result.meta;
+                        const price = meta.regularMarketPrice || meta.previousClose;
+                        const change = meta.regularMarketPrice - meta.previousClose;
+                        const changePercent = (change / meta.previousClose) * 100;
+                        
+                        return {
+                            symbol: symbol,
+                            price: price.toFixed(2),
+                            change: change.toFixed(2),
+                            changePercent: changePercent.toFixed(2),
+                            isCrypto: symbol.includes('-USD'),
+                            isCommodity: symbol.includes('=F'),
+                            isETF: this.etfs.includes(symbol)
+                        };
+                    }
+                } catch (error) {
+                    console.error(`Error fetching ${symbol}:`, error);
+                    return this.getFakeStockData(symbol);
+                }
+            }
+
+            getFakeStockData(symbol) {
+                const fakeData = {
+                    // Major Tech
+                    'AAPL': { price: 185.25, change: 2.15 }, 'GOOGL': { price: 2801.50, change: -12.30 },
+                    'MSFT': { price: 378.90, change: 5.67 }, 'AMZN': { price: 145.80, change: -3.25 },
+                    'TSLA': { price: 248.75, change: 12.40 }, 'NVDA': { price: 875.30, change: 25.60 },
+                    'META': { price: 485.20, change: -8.15 }, 'NFLX': { price: 525.40, change: 4.80 },
+                    
+                    // Growth Stocks
+                    'AMD': { price: 142.30, change: 3.45 }, 'INTC': { price: 43.20, change: -0.85 },
+                    'CRM': { price: 245.60, change: 7.20 }, 'ADBE': { price: 567.80, change: -4.30 },
+                    'PYPL': { price: 62.45, change: 1.85 }, 'SHOP': { price: 67.90, change: 2.10 },
+                    'ZM': { price: 69.80, change: -1.25 }, 'UBER': { price: 58.40, change: 0.95 },
+                    
+                    // Trending Stocks
+                    'COIN': { price: 165.30, change: 8.75 }, 'RBLX': { price: 38.20, change: -2.10 },
+                    'PLTR': { price: 18.65, change: 0.45 }, 'SNOW': { price: 198.40, change: 5.20 },
+                    'NET': { price: 76.80, change: 2.35 }, 'CRWD': { price: 245.70, change: 6.80 },
+                    'DDOG': { price: 98.50, change: 1.90 }, 'OKTA': { price: 89.20, change: -1.40 },
+                    
+                    // Chinese Stocks
+                    'BABA': { price: 78.40, change: 1.85 }, 'JD': { price: 32.60, change: 0.75 },
+                    'NIO': { price: 8.95, change: -0.25 }, 'XPEV': { price: 12.30, change: 0.40 },
+                    'PDD': { price: 89.70, change: 2.15 }, 'BIDU': { price: 98.50, change: -1.20 },
+                    
+                    // ETFs
+                    'SPY': { price: 485.30, change: 3.25 }, 'QQQ': { price: 398.70, change: 5.80 },
+                    'DIA': { price: 365.40, change: 2.10 }, 'GLD': { price: 185.90, change: 0.85 },
+                    'IWM': { price: 198.60, change: 1.45 }, 'EFA': { price: 72.30, change: 0.65 },
+                    'VTI': { price: 248.50, change: 2.75 }, 'VOO': { price: 445.80, change: 3.15 },
+                    
+                    // Commodities/Futures
+                    'GC=F': { price: 2015.40, change: 12.80 }, 'CL=F': { price: 78.65, change: -1.25 },
+                    'SI=F': { price: 24.85, change: 0.45 }, 'NG=F': { price: 2.85, change: 0.08 },
+                    'ZC=F': { price: 485.25, change: -2.75 }, 'ZS=F': { price: 1245.50, change: 8.25 },
+                    
+                    // Crypto
+                    'BTC-USD': { price: 65420.00, change: 1250.00 }, 'ETH-USD': { price: 3180.50, change: 85.30 },
+                    'BNB-USD': { price: 385.20, change: 12.40 }, 'XRP-USD': { price: 0.58, change: 0.02 },
+                    'ADA-USD': { price: 0.45, change: -0.01 }, 'SOL-USD': { price: 98.30, change: 4.20 },
+                    'DOT-USD': { price: 7.85, change: 0.25 }, 'AVAX-USD': { price: 35.60, change: 1.80 },
+                    'MATIC-USD': { price: 0.95, change: 0.03 }, 'LINK-USD': { price: 15.40, change: 0.55 }
+                };
+                
+                const data = fakeData[symbol] || { price: 100.00, change: Math.random() * 10 - 5 };
+                const changePercent = (data.change / data.price) * 100;
+                
+                return {
+                    symbol: symbol,
+                    price: data.price.toFixed(2),
+                    change: data.change.toFixed(2),
+                    changePercent: changePercent.toFixed(2),
+                    isCrypto: symbol.includes('-USD'),
+                    isCommodity: symbol.includes('=F'),
+                    isETF: this.etfs.includes(symbol)
+                };
+            }
+
+            async updateTickerData() {
+                try {
+                    this.isMarketHours = this.isMarketOpen();
+                    
+                    // Select what to show based on market hours
+                    let selectedSymbols = [];
+                    
+                    if (this.isMarketHours) {
+                        // Market hours: stocks + ETFs + commodities
+                        selectedSymbols = [
+                            ...this.stocks.slice(0, 12),
+                            ...this.etfs,
+                            ...this.commodities
+                        ];
+                    } else {
+                        // After hours: reduced stocks + crypto + ETFs + commodities
+                        selectedSymbols = [
+                            ...this.stocks.slice(0, 8),
+                            ...this.cryptos,
+                            ...this.etfs,
+                            ...this.commodities
+                        ];
+                    }
+                    
+                    const dataPromises = selectedSymbols.map(symbol => this.fetchStockData(symbol));
+                    const results = await Promise.all(dataPromises);
+                    const validData = results.filter(item => item !== null);
+                    
+                    if (validData.length > 0) {
+                        this.renderTicker(validData);
+                        this.updateMarketStatus();
+                    }
+                } catch (error) {
+                    console.error('Error updating ticker data:', error);
+                }
+            }
+
+            renderTicker(data) {
+                const allItems = [];
+                
+                // Process each data item
+                data.forEach((item, index) => {
+                    const changeClass = parseFloat(item.change) >= 0 ? 'positive' : 'negative';
+                    const changeSymbol = parseFloat(item.change) >= 0 ? '+' : '';
+                    
+                    let badge = '';
+                    let itemClass = 'stock-item';
+                    let displaySymbol = item.symbol;
+                    
+                    if (item.isCrypto) {
+                        badge = '<span class="crypto-badge">CRYPTO</span>';
+                        displaySymbol = item.symbol.replace('-USD', '');
+                    } else if (item.isCommodity) {
+                        badge = '<span class="commodity-badge">FUTURE</span>';
+                        itemClass = 'commodity-item';
+                        displaySymbol = item.symbol.replace('=F', '');
+                        // Convert commodity symbols to readable names
+                        const commodityNames = {
+                            'GC': 'GOLD', 'CL': 'OIL', 'SI': 'SILVER', 
+                            'NG': 'NAT GAS', 'ZC': 'CORN', 'ZS': 'SOYBEAN'
+                        };
+                        displaySymbol = commodityNames[displaySymbol] || displaySymbol;
+                    } else if (item.isETF) {
+                        badge = '<span class="etf-badge">ETF</span>';
+                        itemClass = 'etf-item';
+                    } else if (Math.random() > 0.8) {
+                        badge = '<span class="trending-badge">📈</span>';
+                    }
+                    
+                    const itemHtml = `
+                        <div class="${itemClass}">
+                            <span class="stock-symbol">${displaySymbol}${badge}</span>
+                            <span class="stock-price">$${item.price}</span>
+                            <span class="stock-change ${changeClass}">
+                                ${changeSymbol}${item.change} (${changeSymbol}${item.changePercent}%)
+                            </span>
                         </div>
-                    `);
+                    `;
+                    
+                    allItems.push(itemHtml);
+                    
+                    // Add news after every 6 items
+                    if ((index + 1) % 6 === 0) {
+                        const newsItem = this.getNextNewsItem();
+                        allItems.push(`
+                            <div class="news-item">
+                                <span class="news-icon">📰</span>
+                                <span class="news-text">${newsItem}</span>
+                            </div>
+                        `);
+                    }
                 });
                 
-                // NEWS
-                items.push(`
-                    <div class="news-item">
-                        <span class="news-icon">📰</span>
-                        <span class="news-text">${this.news[0]}</span>
-                    </div>
-                `);
-                
-                // CRYPTO
-                const crypto = [
-                    {symbol: 'BTC', price: '65420.00', change: '+1250.00', percent: '+1.95%'},
-                    {symbol: 'ETH', price: '3180.50', change: '+85.30', percent: '+2.76%'},
-                    {symbol: 'BNB', price: '385.20', change: '+12.40', percent: '+3.33%'},
-                    {symbol: 'XRP', price: '0.58', change: '+0.02', percent: '+3.57%'},
-                    {symbol: 'ADA', price: '0.45', change: '-0.01', percent: '-2.17%'},
-                    {symbol: 'SOL', price: '98.30', change: '+4.20', percent: '+4.46%'}
-                ];
-                
-                crypto.forEach(coin => {
-                    const changeClass = coin.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${coin.symbol}<span class="crypto-badge">CRYPTO</span></span>
-                            <span class="stock-price">$${coin.price}</span>
-                            <span class="stock-change ${changeClass}">${coin.change} (${coin.percent})</span>
-                        </div>
-                    `);
-                });
-                
-                // ETFs
-                const etfs = [
-                    {symbol: 'SPY', price: '485.30', change: '+3.25', percent: '+0.67%'},
-                    {symbol: 'QQQ', price: '398.70', change: '+5.80', percent: '+1.48%'},
-                    {symbol: 'DIA', price: '365.40', change: '+2.10', percent: '+0.58%'},
-                    {symbol: 'GLD', price: '185.90', change: '+0.85', percent: '+0.46%'}
-                ];
-                
-                etfs.forEach(etf => {
-                    const changeClass = etf.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${etf.symbol}<span class="etf-badge">ETF</span></span>
-                            <span class="stock-price">$${etf.price}</span>
-                            <span class="stock-change ${changeClass}">${etf.change} (${etf.percent})</span>
-                        </div>
-                    `);
-                });
-                
-                // COMMODITIES
-                const commodities = [
-                    {symbol: 'GOLD', price: '2015.40', change: '+12.80', percent: '+0.64%'},
-                    {symbol: 'OIL', price: '78.65', change: '-1.25', percent: '-1.56%'},
-                    {symbol: 'SILVER', price: '24.85', change: '+0.45', percent: '+1.84%'}
-                ];
-                
-                commodities.forEach(commodity => {
-                    const changeClass = commodity.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${commodity.symbol}<span class="future-badge">FUTURE</span></span>
-                            <span class="stock-price">$${commodity.price}</span>
-                            <span class="stock-change ${changeClass}">${commodity.change} (${commodity.percent})</span>
-                        </div>
-                    `);
-                });
-                
-                // NEWS
-                items.push(`
-                    <div class="news-item">
-                        <span class="news-icon">📰</span>
-                        <span class="news-text">${this.news[1]}</span>
-                    </div>
-                `);
-                
-                // INDEX FUTURES
-                const futures = [
-                    {symbol: 'S&P 500', price: '4850.75', change: '+15.25', percent: '+0.32%'},
-                    {symbol: 'NASDAQ', price: '16420.50', change: '+45.80', percent: '+0.28%'},
-                    {symbol: 'DOW', price: '36540.00', change: '+125.00', percent: '+0.34%'}
-                ];
-                
-                futures.forEach(future => {
-                    const changeClass = future.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${future.symbol}<span class="future-badge">FUTURE</span></span>
-                            <span class="stock-price">$${future.price}</span>
-                            <span class="stock-change ${changeClass}">${future.change} (${future.percent})</span>
-                        </div>
-                    `);
-                });
-                
-                console.log('Created', items.length, 'items');
-                console.log('Crypto count:', crypto.length);
-                console.log('ETF count:', etfs.length);
-                console.log('Commodity count:', commodities.length);
-                
-                // Create seamless loop - triple the content for smooth transition
-                const content = items.join('');
-                this.tickerContent.innerHTML = content + content + content;
+                // Create seamless loop by duplicating content
+                const content = allItems.join('');
+                this.tickerContent.innerHTML = content + content;
+            }
+
+            getNextNewsItem() {
+                const newsItem = this.newsHeadlines[this.currentNewsIndex];
+                this.currentNewsIndex = (this.currentNewsIndex + 1) % this.newsHeadlines.length;
+                return newsItem;
             }
 
             updateMarketStatus() {
@@ -318,14 +553,10 @@
                     timeZone: 'America/New_York'
                 });
                 
-                const day = now.getDay();
-                const hours = now.getHours();
-                const isHoliday = (now.getMonth() === 6 && now.getDate() === 4); // July 4th
-                
                 let status;
-                if (isHoliday) {
+                if (this.isMarketHoliday(now)) {
                     status = `🏛️ HOLIDAY • ${timeStr} EST`;
-                } else if (day >= 1 && day <= 5 && hours >= 9 && hours < 16) {
+                } else if (this.isMarketHours) {
                     status = `🟢 MARKET OPEN • ${timeStr} EST`;
                 } else {
                     status = `🔴 MARKET CLOSED • ${timeStr} EST`;
@@ -335,10 +566,19 @@
             }
         }
 
-        // Initialize when page loads
+        // Initialize the enhanced ticker
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Starting Simple Ticker...');
-            new SimpleTicker();
+            new EnhancedStockTicker();
+        });
+
+        // Handle visibility changes
+        document.addEventListener('visibilitychange', () => {
+            const ticker = document.querySelector('.ticker-content');
+            if (document.hidden) {
+                ticker.style.animationPlayState = 'paused';
+            } else {
+                ticker.style.animationPlayState = 'running';
+            }
         });
     </script>
 </body>
