@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Ticker - Simple Working Version</title>
+    <title>Money & Finance Real-Time Ticker</title>
     <style>
         body {
             margin: 0;
@@ -28,7 +28,7 @@
             display: flex;
             align-items: center;
             height: 100%;
-            animation: scroll-left 45s linear infinite;
+            animation: scroll-left 90s linear infinite;
             white-space: nowrap;
         }
 
@@ -135,179 +135,356 @@
             margin-left: 3px;
         }
 
-        .future-badge {
-            background: linear-gradient(45deg, #ffd700, #ffed4e);
-            color: #000;
-            font-size: 9px;
-            padding: 1px 3px;
-            border-radius: 3px;
-            margin-left: 3px;
+        .loading {
+            color: #ffffff;
+            text-align: center;
+            padding: 30px;
+            font-size: 16px;
+        }
+
+        .real-data-indicator {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .fallback-indicator {
+            color: #ff4757;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="ticker-container">
         <div class="ticker-content" id="tickerContent">
-            Loading stock data...
+            <div class="loading">📊 Loading Money & Finance real-time data...</div>
         </div>
-        <div class="market-status" id="marketStatus">•••</div>
+        <div class="market-status" id="marketStatus">🔄 CONNECTING TO MONEY & FINANCE</div>
     </div>
 
     <script>
-        class SimpleTicker {
+        class AlphaVantageOnlyTicker {
             constructor() {
+                // YOUR ALPHA VANTAGE API KEY
+                this.apiKey = '1CEUSIYJVLEYZUSP';
+                
                 this.tickerContent = document.getElementById('tickerContent');
                 this.marketStatus = document.getElementById('marketStatus');
                 this.newsIndex = 0;
+                this.realDataCount = 0;
+                this.totalSymbols = 0;
+                
+                // Stock symbols for Alpha Vantage
+                this.stockSymbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'SPY', 'QQQ'];
+                
+                // Crypto symbols for Alpha Vantage - Using digital currency endpoint
+                this.cryptoSymbols = [
+                    { symbol: 'BTC', av_symbol: 'BTC' },
+                    { symbol: 'ETH', av_symbol: 'ETH' },
+                    { symbol: 'ADA', av_symbol: 'ADA' },
+                    { symbol: 'DOT', av_symbol: 'DOT' }
+                ];
                 
                 this.news = [
-                    "📊 S&P 500 reaches new highs as tech stocks surge",
-                    "🚀 Tesla announces breakthrough in battery technology", 
-                    "💰 Federal Reserve maintains interest rates",
-                    "📱 Apple unveils new AI features",
-                    "⚡ NVIDIA stock soars on AI demand",
-                    "💎 Bitcoin hits new monthly high",
-                    "🌐 Microsoft expands cloud services",
-                    "🔋 Clean energy stocks gain momentum"
+                    "📊 Markets respond to latest economic indicators and Federal Reserve policy decisions",
+                    "🚀 Technology sector continues innovation surge with strong earnings reports",
+                    "💰 Crypto markets show resilience amid institutional adoption trends",
+                    "📱 Major tech companies report record quarterly growth",
+                    "⚡ Energy sector demonstrates stability in changing market conditions",
+                    "💎 Digital assets gain momentum among retail and institutional investors",
+                    "🌐 Global markets react to ongoing geopolitical and economic developments",
+                    "🏦 Financial sector maintains strong performance in current environment"
                 ];
                 
                 this.init();
             }
 
-            init() {
-                this.createTicker();
+            async init() {
+                console.log('🚀 Starting Money & Finance ticker...');
+                console.log('API Key configured:', this.apiKey !== 'YOUR_API_KEY_HERE' ? '✅ Yes' : '❌ Please set your API key');
+                
+                await this.updateTicker();
+                // Update every 15 minutes (Alpha Vantage free tier: 5 calls/minute, 500/day)
+                setInterval(() => this.updateTicker(), 900000);
                 this.updateMarketStatus();
                 setInterval(() => this.updateMarketStatus(), 60000);
             }
 
-            createTicker() {
-                console.log('Creating simple ticker...');
+            async fetchStockData(symbol) {
+                try {
+                    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${this.apiKey}`;
+                    console.log(`📈 Fetching stock data for ${symbol}...`);
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log(`Alpha Vantage stock response for ${symbol}:`, data);
+                    
+                    // Check for API errors
+                    if (data['Note']) {
+                        console.log(`⚠️ API rate limit for ${symbol}:`, data['Note']);
+                        return null;
+                    }
+                    
+                    if (data['Error Message']) {
+                        console.log(`❌ API error for ${symbol}:`, data['Error Message']);
+                        return null;
+                    }
+                    
+                    const quote = data['Global Quote'];
+                    if (!quote || Object.keys(quote).length === 0) {
+                        console.log(`❌ No stock quote data for ${symbol}`);
+                        return null;
+                    }
+                    
+                    const price = parseFloat(quote['05. price']);
+                    const change = parseFloat(quote['09. change']);
+                    const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
+                    
+                    console.log(`✅ REAL stock data for ${symbol}: $${price.toFixed(2)}`);
+                    this.realDataCount++;
+                    
+                    return {
+                        symbol: symbol,
+                        price: price.toFixed(2),
+                        change: change.toFixed(2),
+                        changePercent: changePercent.toFixed(2),
+                        isReal: true,
+                        type: 'stock'
+                    };
+                } catch (error) {
+                    console.error(`❌ Error fetching stock data for ${symbol}:`, error);
+                    return null;
+                }
+            }
+
+            async fetchCryptoData(cryptoItem) {
+                try {
+                    const url = `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=${cryptoItem.av_symbol}&market=USD&apikey=${this.apiKey}`;
+                    console.log(`💰 Fetching crypto data for ${cryptoItem.symbol}...`);
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log(`Money & Finance crypto response for ${cryptoItem.symbol}:`, data);
+                    
+                    // Check for API errors
+                    if (data['Note']) {
+                        console.log(`⚠️ API rate limit for ${cryptoItem.symbol}:`, data['Note']);
+                        return null;
+                    }
+                    
+                    if (data['Error Message']) {
+                        console.log(`❌ API error for ${cryptoItem.symbol}:`, data['Error Message']);
+                        return null;
+                    }
+                    
+                    const timeSeries = data['Time Series (Digital Currency Daily)'];
+                    if (!timeSeries) {
+                        console.log(`❌ No crypto time series data for ${cryptoItem.symbol}`);
+                        return null;
+                    }
+                    
+                    // Get the most recent date's data
+                    const dates = Object.keys(timeSeries);
+                    const latestDate = dates[0];
+                    const latestData = timeSeries[latestDate];
+                    
+                    const price = parseFloat(latestData['4a. close (USD)']);
+                    const open = parseFloat(latestData['1a. open (USD)']);
+                    const changePercent = ((price - open) / open * 100).toFixed(2);
+                    
+                    console.log(`✅ REAL crypto data for ${cryptoItem.symbol}: ${price.toFixed(2)}`);
+                    this.realDataCount++;
+                    
+                    // Format price based on crypto type
+                    let formattedPrice;
+                    if (cryptoItem.symbol === 'BTC') {
+                        formattedPrice = Math.round(price).toLocaleString();
+                    } else if (cryptoItem.symbol === 'ETH') {
+                        formattedPrice = Math.round(price).toLocaleString();
+                    } else {
+                        formattedPrice = price.toFixed(2);
+                    }
+                    
+                    return {
+                        symbol: cryptoItem.symbol,
+                        price: formattedPrice,
+                        changePercent: changePercent,
+                        isReal: true,
+                        type: 'crypto'
+                    };
+                } catch (error) {
+                    console.error(`❌ Error fetching crypto data for ${cryptoItem.symbol}:`, error);
+                    return null;
+                }
+            }
+
+            getStockFallbackData(symbol) {
+                const fallback = {
+                    'AAPL': { price: '195.25', change: '2.15', changePercent: '1.18' },
+                    'GOOGL': { price: '175.50', change: '-1.30', changePercent: '-0.74' },
+                    'MSFT': { price: '425.90', change: '5.67', changePercent: '1.35' },
+                    'AMZN': { price: '185.80', change: '-2.25', changePercent: '-1.20' },
+                    'TSLA': { price: '248.75', change: '12.40', changePercent: '5.24' },
+                    'NVDA': { price: '138.30', change: '3.60', changePercent: '2.68' },
+                    'SPY': { price: '595.30', change: '2.25', changePercent: '0.38' },
+                    'QQQ': { price: '508.70', change: '4.80', changePercent: '0.95' }
+                };
                 
+                if (fallback[symbol]) {
+                    return { 
+                        symbol, 
+                        ...fallback[symbol], 
+                        isReal: false, 
+                        type: 'stock' 
+                    };
+                }
+                return null;
+            }
+
+            getCryptoFallbackData(symbol) {
+                const fallback = {
+                    'BTC': { price: '108,000', changePercent: '1.25' },
+                    'ETH': { price: '4,200', changePercent: '2.15' },
+                    'ADA': { price: '1.35', changePercent: '0.85' },
+                    'DOT': { price: '9.80', changePercent: '1.75' }
+                };
+                
+                if (fallback[symbol]) {
+                    return { 
+                        symbol, 
+                        ...fallback[symbol], 
+                        isReal: false, 
+                        type: 'crypto' 
+                    };
+                }
+                return null;
+            }
+
+            async updateTicker() {
+                console.log('=== 🔄 Starting Money & Finance ticker update ===');
+                
+                this.realDataCount = 0;
+                this.totalSymbols = this.stockSymbols.length + this.cryptoSymbols.length;
                 const items = [];
+                let fallbackCount = 0;
                 
-                // STOCKS
-                const stocks = [
-                    {symbol: 'AAPL', price: '185.25', change: '+2.15', percent: '+1.18%'},
-                    {symbol: 'GOOGL', price: '2801.50', change: '-12.30', percent: '-0.44%'},
-                    {symbol: 'MSFT', price: '378.90', change: '+5.67', percent: '+1.52%'},
-                    {symbol: 'AMZN', price: '145.80', change: '-3.25', percent: '-2.18%'},
-                    {symbol: 'TSLA', price: '248.75', change: '+12.40', percent: '+5.24%'},
-                    {symbol: 'NVDA', price: '875.30', change: '+25.60', percent: '+3.01%'},
-                    {symbol: 'META', price: '485.20', change: '-8.15', percent: '-1.65%'},
-                    {symbol: 'NFLX', price: '525.40', change: '+4.80', percent: '+0.92%'}
-                ];
-                
-                stocks.forEach(stock => {
-                    const changeClass = stock.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${stock.symbol}</span>
-                            <span class="stock-price">$${stock.price}</span>
-                            <span class="stock-change ${changeClass}">${stock.change} (${stock.percent})</span>
-                        </div>
-                    `);
-                });
-                
-                // NEWS
+                // Fetch stock data with delays to respect rate limits
+                for (let i = 0; i < this.stockSymbols.length; i++) {
+                    const symbol = this.stockSymbols[i];
+                    
+                    let stockData = await this.fetchStockData(symbol);
+                    
+                    if (!stockData) {
+                        stockData = this.getStockFallbackData(symbol);
+                        fallbackCount++;
+                        console.log(`⚠️ Using fallback stock data for ${symbol}`);
+                    }
+                    
+                    if (stockData) {
+                        const changeClass = parseFloat(stockData.changePercent) >= 0 ? 'positive' : 'negative';
+                        const changeSymbol = parseFloat(stockData.changePercent) >= 0 ? '+' : '';
+                        
+                        let badge = '';
+                        if (['SPY', 'QQQ'].includes(stockData.symbol)) {
+                            badge = '<span class="etf-badge">ETF</span>';
+                        }
+                        
+                        const dataIndicator = stockData.isReal ? 
+                            '<span class="real-data-indicator">●</span>' : 
+                            '<span class="fallback-indicator">●</span>';
+                        
+                        items.push(`
+                            <div class="stock-item">
+                                <span class="stock-symbol">${stockData.symbol}${badge}${dataIndicator}</span>
+                                <span class="stock-price">$${stockData.price}</span>
+                                <span class="stock-change ${changeClass}">
+                                    ${changeSymbol}${stockData.change} (${changeSymbol}${stockData.changePercent}%)
+                                </span>
+                            </div>
+                        `);
+                    }
+                    
+                    // Delay between API calls (12 seconds to respect 5 calls/minute limit)
+                    if (i < this.stockSymbols.length - 1) {
+                        console.log(`⏱️ Waiting 12 seconds before next API call...`);
+                        await new Promise(resolve => setTimeout(resolve, 12000));
+                    }
+                }
+
+                // Add news item
                 items.push(`
                     <div class="news-item">
                         <span class="news-icon">📰</span>
-                        <span class="news-text">${this.news[0]}</span>
+                        <span class="news-text">${this.news[this.newsIndex % this.news.length]}</span>
                     </div>
                 `);
-                
-                // CRYPTO
-                const crypto = [
-                    {symbol: 'BTC', price: '65420.00', change: '+1250.00', percent: '+1.95%'},
-                    {symbol: 'ETH', price: '3180.50', change: '+85.30', percent: '+2.76%'},
-                    {symbol: 'BNB', price: '385.20', change: '+12.40', percent: '+3.33%'},
-                    {symbol: 'XRP', price: '0.58', change: '+0.02', percent: '+3.57%'},
-                    {symbol: 'ADA', price: '0.45', change: '-0.01', percent: '-2.17%'},
-                    {symbol: 'SOL', price: '98.30', change: '+4.20', percent: '+4.46%'}
-                ];
-                
-                crypto.forEach(coin => {
-                    const changeClass = coin.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${coin.symbol}<span class="crypto-badge">CRYPTO</span></span>
-                            <span class="stock-price">$${coin.price}</span>
-                            <span class="stock-change ${changeClass}">${coin.change} (${coin.percent})</span>
-                        </div>
-                    `);
-                });
-                
-                // ETFs
-                const etfs = [
-                    {symbol: 'SPY', price: '485.30', change: '+3.25', percent: '+0.67%'},
-                    {symbol: 'QQQ', price: '398.70', change: '+5.80', percent: '+1.48%'},
-                    {symbol: 'DIA', price: '365.40', change: '+2.10', percent: '+0.58%'},
-                    {symbol: 'GLD', price: '185.90', change: '+0.85', percent: '+0.46%'}
-                ];
-                
-                etfs.forEach(etf => {
-                    const changeClass = etf.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${etf.symbol}<span class="etf-badge">ETF</span></span>
-                            <span class="stock-price">$${etf.price}</span>
-                            <span class="stock-change ${changeClass}">${etf.change} (${etf.percent})</span>
-                        </div>
-                    `);
-                });
-                
-                // COMMODITIES
-                const commodities = [
-                    {symbol: 'GOLD', price: '2015.40', change: '+12.80', percent: '+0.64%'},
-                    {symbol: 'OIL', price: '78.65', change: '-1.25', percent: '-1.56%'},
-                    {symbol: 'SILVER', price: '24.85', change: '+0.45', percent: '+1.84%'}
-                ];
-                
-                commodities.forEach(commodity => {
-                    const changeClass = commodity.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${commodity.symbol}<span class="future-badge">FUTURE</span></span>
-                            <span class="stock-price">$${commodity.price}</span>
-                            <span class="stock-change ${changeClass}">${commodity.change} (${commodity.percent})</span>
-                        </div>
-                    `);
-                });
-                
-                // NEWS
+                this.newsIndex++;
+
+                // Wait before crypto calls
+                console.log(`⏱️ Waiting 12 seconds before crypto API calls...`);
+                await new Promise(resolve => setTimeout(resolve, 12000));
+
+                // Fetch crypto data with delays
+                for (let i = 0; i < this.cryptoSymbols.length; i++) {
+                    const cryptoItem = this.cryptoSymbols[i];
+                    
+                    let cryptoData = await this.fetchCryptoData(cryptoItem);
+                    
+                    if (!cryptoData) {
+                        cryptoData = this.getCryptoFallbackData(cryptoItem.symbol);
+                        fallbackCount++;
+                        console.log(`⚠️ Using fallback crypto data for ${cryptoItem.symbol}`);
+                    }
+                    
+                    if (cryptoData) {
+                        const changeClass = parseFloat(cryptoData.changePercent) >= 0 ? 'positive' : 'negative';
+                        const changeSymbol = parseFloat(cryptoData.changePercent) >= 0 ? '+' : '';
+                        
+                        const dataIndicator = cryptoData.isReal ? 
+                            '<span class="real-data-indicator">●</span>' : 
+                            '<span class="fallback-indicator">●</span>';
+                        
+                        items.push(`
+                            <div class="stock-item">
+                                <span class="stock-symbol">${cryptoData.symbol}<span class="crypto-badge">CRYPTO</span>${dataIndicator}</span>
+                                <span class="stock-price">$${cryptoData.price}</span>
+                                <span class="stock-change ${changeClass}">
+                                    ${changeSymbol}${cryptoData.changePercent}%
+                                </span>
+                            </div>
+                        `);
+                    }
+                    
+                    // Delay between crypto API calls
+                    if (i < this.cryptoSymbols.length - 1) {
+                        console.log(`⏱️ Waiting 12 seconds before next crypto API call...`);
+                        await new Promise(resolve => setTimeout(resolve, 12000));
+                    }
+                }
+
+                // Add final news item
                 items.push(`
                     <div class="news-item">
                         <span class="news-icon">📰</span>
-                        <span class="news-text">${this.news[1]}</span>
+                        <span class="news-text">${this.news[(this.newsIndex + 1) % this.news.length]}</span>
                     </div>
                 `);
+
+                console.log(`=== ✅ MONEY & FINANCE UPDATE COMPLETE ===`);
+                console.log(`📊 Real data sources: ${this.realDataCount}/${this.totalSymbols}`);
+                console.log(`⚠️ Fallback data used: ${fallbackCount}/${this.totalSymbols}`);
+                console.log(`🎯 Success rate: ${((this.realDataCount/this.totalSymbols)*100).toFixed(1)}%`);
                 
-                // INDEX FUTURES
-                const futures = [
-                    {symbol: 'S&P 500', price: '4850.75', change: '+15.25', percent: '+0.32%'},
-                    {symbol: 'NASDAQ', price: '16420.50', change: '+45.80', percent: '+0.28%'},
-                    {symbol: 'DOW', price: '36540.00', change: '+125.00', percent: '+0.34%'}
-                ];
-                
-                futures.forEach(future => {
-                    const changeClass = future.change.startsWith('+') ? 'positive' : 'negative';
-                    items.push(`
-                        <div class="stock-item">
-                            <span class="stock-symbol">${future.symbol}<span class="future-badge">FUTURE</span></span>
-                            <span class="stock-price">$${future.price}</span>
-                            <span class="stock-change ${changeClass}">${future.change} (${future.percent})</span>
-                        </div>
-                    `);
-                });
-                
-                console.log('Created', items.length, 'items');
-                console.log('Crypto count:', crypto.length);
-                console.log('ETF count:', etfs.length);
-                console.log('Commodity count:', commodities.length);
-                
-                // Create seamless loop - triple the content for smooth transition
+                // Create seamless loop - duplicate content 2 times for smooth transition
                 const content = items.join('');
-                this.tickerContent.innerHTML = content + content + content;
+                this.tickerContent.innerHTML = content + content;
             }
 
             updateMarketStatus() {
@@ -318,27 +495,16 @@
                     timeZone: 'America/New_York'
                 });
                 
-                const day = now.getDay();
-                const hours = now.getHours();
-                const isHoliday = (now.getMonth() === 6 && now.getDate() === 4); // July 4th
+                const dataQuality = this.totalSymbols > 0 ? 
+                    `${this.realDataCount}/${this.totalSymbols} REAL` : 'LOADING';
                 
-                let status;
-                if (isHoliday) {
-                    status = `🏛️ HOLIDAY • ${timeStr} EST`;
-                } else if (day >= 1 && day <= 5 && hours >= 9 && hours < 16) {
-                    status = `🟢 MARKET OPEN • ${timeStr} EST`;
-                } else {
-                    status = `🔴 MARKET CLOSED • ${timeStr} EST`;
-                }
-                
-                this.marketStatus.textContent = status;
+                this.marketStatus.textContent = `📊 MONEY & FINANCE • ${dataQuality} • ${timeStr} EST`;
             }
         }
 
-        // Initialize when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Starting Simple Ticker...');
-            new SimpleTicker();
+            console.log('🚀 Money & Finance Real-Time Ticker Starting...');
+            new AlphaVantageOnlyTicker();
         });
     </script>
 </body>
